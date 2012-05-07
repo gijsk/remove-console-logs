@@ -6,8 +6,14 @@ with 0. It uses [falafel](https://github.com/substack/node-falafel) to walk the 
 Falafel uses [esprima](https://github.com/ariya/esprima) to parse your JS.
 Finally, [optimist](https://github.com/substack/optimist) is used for cli argument parsing.
 
-How?
-----
+How do I get it?
+----------------
 
 Just running `npm install -g remove-console-logs` should work.
+
+
+How do I use it?
+----------------
+
+See `remove-console-logs --help`.
 
