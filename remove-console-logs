@@ -21,7 +21,7 @@ var myArgs = optimist.usage("Remove console logs from a JS file.\nUsage: $0")
 var args = myArgs.argv;
 
 if (args.h) {
-  console.log(myArgs.showHelp());
+  myArgs.showHelp();
   process.exit(0);
 }
 
