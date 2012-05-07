@@ -1,7 +1,78 @@
 #!/usr/bin/env node
 
-var esprima = require('esprima');
+var fs = require('fs'),
+    falafel = require('falafel'),
+    optimist = require('optimist');
 
-var args = process.argv.slice(2);
+var myArgs = optimist.usage("Remove console logs from a JS file.\nUsage: $0")
+                     .alias('h', 'help')
+                     .alias('l', 'logonly')
+                     .alias('i', 'input')
+                     .alias('o', 'output')
+                     .default('o', 'stdout')
+                     .default('i', 'stdin')
+                     .default('l', false)
+                     .default('h', false)
+                     .describe('i', 'Read input from this file, "stdin" to read from standard in.')
+                     .describe('o', 'Write output to this file, "stdout" to write to standard out.')
+                     .describe('l', 'Limit to replacing the "log" method, otherwise all other console calls will be removed, too.')
+                     .describe('h', 'Print this help.');
 
-process.stdout.write(args.join(", "));
+var args = myArgs.argv;
+
+if (args.h) {
+  console.log(myArgs.showHelp());
+  process.exit(0);
+}
+
+var instream, outstream;
+
+var isStdOut = false;
+
+if (args.o == 'stdout') {
+  isStdOut = true;
+  outstream = process.stdout;
+}
+
+if (args.i == 'stdin') {
+  instream = process.stdin;
+  instream.resume();
+} else {
+  instream = fs.createReadStream(args.i);
+}
+instream.setEncoding('utf8');
+
+var scriptdata = '';
+
+instream.on('data', function(str) { scriptdata += str; });
+instream.on('end', function() {
+  var outputStr = falafel(scriptdata, function(node) {
+    if (isConsoleLog(node)) { 
+      node.update('0');
+    }
+  });
+
+  if (isStdOut) {
+    outstream.write(str);
+    process.exit(0);
+  } else {
+    fs.writeFile(args.o, outputStr, 'utf8', function() { console.log('Saved output as "' + args.o + '".'); });
+  }
+});
+
+function isConsoleLog(node) {
+  function isConsole(n) {
+    return (n.name == 'console') || (n.object && n.object.name == 'window' && n.property.name == 'console'); 
+  };
+  function shouldMessWithMethod(method) {
+    var consoleMethods = ['assert', 'clear', 'count', 'debug', 'dir', 'dirxml', 'error',
+                          'exception', 'error', 'group', 'groupEnd', 'groupCollapsed', 'info',
+                          'log', 'memoryProfile', 'memoryProfileEnd', 'profile', 'profileEnd',
+                          'table', 'time', 'timeEnd', 'timeStamp', 'trace', 'warn'];
+    return method && ((args.l && method.name == 'log') ||
+                      (!args.l && consoleMethods.indexOf(method.name) != -1));
+  };
+  return node.type == 'CallExpression' && node.callee && node.callee.object && isConsole(node.callee.object) && shouldMessWithMethod(node.callee.property);
+}
+
+
