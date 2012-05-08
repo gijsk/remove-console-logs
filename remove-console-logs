@@ -53,7 +53,7 @@ instream.on('end', function() {
   });
 
   if (isStdOut) {
-    outstream.write(str);
+    outstream.write(outputStr);
     process.exit(0);
   } else {
     fs.writeFile(args.o, outputStr, 'utf8', function() { console.log('Saved output as "' + args.o + '".'); });
