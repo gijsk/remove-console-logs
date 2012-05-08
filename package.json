@@ -1,6 +1,6 @@
 {
   "name": "remove-console-logs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Remove console logs from JS files.",
   "keywords": [
     "javascript",
