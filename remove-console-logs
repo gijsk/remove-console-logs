@@ -81,7 +81,12 @@ if (args.i == 'stdin') {
   instream = process.stdin;
   instream.resume();
 } else {
-  instream = fs.createReadStream(args.i);
+  try {
+    instream = fs.createReadStream(args.i);
+  } catch (ex) {
+    console.error("Error: could not write to:", args.i, "; exiting without doing anything.");
+    process.exit(1);
+  }
 }
 instream.setEncoding('utf8');
 
