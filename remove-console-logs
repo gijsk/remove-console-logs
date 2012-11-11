@@ -25,12 +25,15 @@ var myArgs = optimist.usage("Remove console logs from a JS file.\nUsage: $0")
                      .alias('l', 'logonly')
                      .alias('i', 'input')
                      .alias('o', 'output')
+                     .alias('io', 'inout')
                      .default('o', 'stdout')
                      .default('i', 'stdin')
+                     .default('io', '')
                      .default('l', false)
                      .default('h', false)
                      .describe('i', 'Read input from this file, "stdin" to read from standard in.')
                      .describe('o', 'Write output to this file, "stdout" to write to standard out.')
+                     .describe('io', 'Read and write to this file. Overrides the --input and --output options.')
                      .describe('l', 'Limit to replacing the "log" method, otherwise all other console calls will be removed, too.')
                      .describe('h', 'Print this help.');
 
@@ -71,6 +74,11 @@ if (args.h) {
 var instream, outstream;
 
 var isStdOut = false;
+
+if (args.io != '') {
+  args.o = args.io;
+  args.i = args.io;
+}
 
 if (args.o == 'stdout') {
   isStdOut = true;
