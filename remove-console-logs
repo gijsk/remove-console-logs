@@ -92,7 +92,7 @@ if (args.i == 'stdin') {
   try {
     instream = fs.createReadStream(args.i);
   } catch (ex) {
-    console.error("Error: could not write to:", args.i, "; exiting without doing anything.");
+    console.error("Error: could not read from:", args.i, "; exiting without doing anything.");
     process.exit(1);
   }
 }
@@ -123,7 +123,7 @@ function isConsoleLog(node) {
     return (n.name == 'console') || (n.object && n.object.name == 'window' && n.property.name == 'console'); 
   };
   function shouldMessWithMethod(method) {
-    return method && ((args.l && method.name == 'log') ||
+    return method && (method.name == 'log' ||
                       (!args.l && CONSOLE_METHODS.indexOf(method.name) != -1));
   };
   return node.type == 'CallExpression' && node.callee && node.callee.object && isConsole(node.callee.object) && shouldMessWithMethod(node.callee.property);
