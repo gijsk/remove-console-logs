@@ -55,6 +55,71 @@ function isConsoleLog(node, logOnly) {
   return node.type == 'CallExpression' && node.callee && node.callee.object && isConsole(node.callee.object) && shouldMessWithMethod(node.callee.property);
 }
 
+function cleanArg(arg) {
+  var someNode = null;
+  var n = falafel(arg, function(node) {
+    someNode = node;
+    node.__selfHasSideEffects = node.type == 'CallExpression' || node.type == 'UpdateExpression' ||
+                                node.type == 'AssignmentExpression';
+    node.__hasSideEffects = (node.__kidsWithSideEffects && node.__kidsWithSideEffects.length) ||
+                            node.__selfHasSideEffects;
+    if (node.parent) {
+      if (!node.parent.__kidsWithSideEffects) {
+        node.parent.__kidsWithSideEffects = []
+        node.parent.__kidsWithoutSideEffects = []
+      }
+      if (node.__hasSideEffects) {
+        node.parent.__kidsWithSideEffects.push(node);
+      } else {
+        node.parent.__kidsWithoutSideEffects.push(node);
+      }
+    }
+  });
+  var topNode = someNode;
+  while (topNode.parent) {
+    topNode = topNode.parent;
+  }
+
+  function cleanNodeWithPossibleKids(n) {
+    if (n.__selfHasSideEffects) {
+      var source = n.source();
+      if (n.type == 'AssignmentExpression' || n.type == 'UpdateExpression') {
+        source = '(' + source + ')';
+      }
+      return [source];
+    }
+    if (n.__kidsWithSideEffects && n.__kidsWithSideEffects.length) {
+      return callSideEffectsButDoNothing(n.__kidsWithSideEffects, cleanNodeWithPossibleKids);
+    }
+    // Otherwise, nothin':
+    return [];
+  }
+  return cleanNodeWithPossibleKids(topNode);
+}
+
+function updateNode(node) {
+  var nodesToLeave = callSideEffectsButDoNothing(node.arguments, function(n) {
+    return cleanArg(n.source());
+  });
+
+  if (nodesToLeave.length == 0) {
+    node.update('0');
+  } else {
+    node.update('(' + nodesToLeave.join(' && 0) || (') + ' && 0)');
+  }
+}
+
+function callSideEffectsButDoNothing(ary, fn) {
+  var rv = [];
+  for (var i = 0; i < ary.length; i++) {
+    var newRv = fn(ary[i]);
+    if (newRv.length) {
+      rv = rv.concat(newRv);
+    }
+  }
+  return rv;
+}
+
 module.exports = {
   removeLogs: function remLogs(inDesignator, outDesignator, logOnly) {
     var instream;
@@ -79,8 +144,8 @@ module.exports = {
     instream.on('data', function(str) { scriptdata += str; });
     instream.on('end', function() {
       var outputStr = falafel(scriptdata, function(node) {
-        if (isConsoleLog(node, logOnly)) { 
-          node.update('0');
+        if (isConsoleLog(node, logOnly)) {
+          updateNode(node);
         }
       });
 
@@ -95,3 +160,4 @@ module.exports = {
     });
   }
 }
+
