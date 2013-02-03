@@ -49,5 +49,21 @@ if (args.io != '') {
   args.i = args.io;
 }
 
-removeLogs(args.i, args.o, args.l);
+var files;
+if (!args.io && args.i == 'stdin' && args.o == 'stdout' && args._ && args._.length) {
+  files = args._;
+  files = files.map(function(x) { return [x, x] });
+} else {
+  files = [[args.i, args.o]];
+}
+
+
+var batchMode = files.length > 1;
+if (batchMode) {
+  console.log("Using batch processing mode, processing all given files in-place.");
+}
+for (var i = 0; i < files.length; i++) {
+  removeLogs(files[i][0], files[i][1], args.l, batchMode);
+}
+
 

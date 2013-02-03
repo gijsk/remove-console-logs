@@ -120,8 +120,17 @@ function callSideEffectsButDoNothing(ary, fn) {
   return rv;
 }
 
+var queuedFiles = 0, totalFileCount = 0;
+
 module.exports = {
-  removeLogs: function remLogs(inDesignator, outDesignator, logOnly) {
+  removeLogs: function remLogs(inDesignator, outDesignator, logOnly, batchMode) {
+    function onInputError(ex) {
+      var resultOfError = batchMode ? "skipping." : "exiting without doing anything.";
+      console.error("Error: could not read from:", inDesignator, ";", resultOfError);
+      if (!batchMode) {
+        process.exit(1);
+      }
+    }
     var instream;
 
     var isStdOut = (outDesignator == 'stdout');
@@ -132,14 +141,17 @@ module.exports = {
     } else {
       try {
         instream = fs.createReadStream(inDesignator);
+        instream.on('error', onInputError);
       } catch (ex) {
-        console.error("Error: could not read from:", inDesignator, "; exiting without doing anything.");
-        process.exit(1);
+        onInputError(ex);
+        return;
       }
     }
     instream.setEncoding('utf8');
 
     var scriptdata = '';
+    queuedFiles++;
+    totalFileCount++;
 
     instream.on('data', function(str) { scriptdata += str; });
     instream.on('end', function() {
@@ -151,10 +163,24 @@ module.exports = {
 
       if (isStdOut) {
         process.stdout.write(outputStr.toString());
-        process.exit(0);
+        if (!batchMode); {
+          process.exit(0);
+        }
       } else {
         process.nextTick(function() {
-          fs.writeFile(outDesignator, outputStr.toString(), 'utf8', function() { console.log('Saved output as "' + outDesignator + '".'); });
+          fs.writeFile(outDesignator, outputStr.toString(), 'utf8', function() {
+            if (!batchMode) {
+              console.log('Saved output as "' + outDesignator + '".');
+            } else {
+              console.log('Processed "' + outDesignator + '".');
+            }
+
+            queuedFiles--;
+            if (batchMode && queuedFiles == 0) {
+              console.log("Finished, processed " + totalFileCount + " successfully.");
+              process.exit(0);
+            }
+          });
         });
       }
     });
