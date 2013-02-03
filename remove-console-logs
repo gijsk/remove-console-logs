@@ -17,7 +17,11 @@
  */
 
 var optimist = require('optimist');
-var removeLogs = require('./logremover.js').removeLogs;
+var LogRemover = require('./logremover.js');
+var fs = require('fs');
+var path = require('path');
+
+var remover = new LogRemover();
 
 
 var myArgs = optimist.usage("Remove console logs from a JS file.\nUsage: $0")
@@ -50,20 +54,50 @@ if (args.io != '') {
 }
 
 var files;
+var gotListOfFiles = false;
 if (!args.io && args.i == 'stdin' && args.o == 'stdout' && args._ && args._.length) {
+  gotListOfFiles = true;
   files = args._;
-  files = files.map(function(x) { return [x, x] });
+  files = files.map(function(x) {
+    return [x, x];
+  });
 } else {
   files = [[args.i, args.o]];
 }
 
 
-var batchMode = files.length > 1;
+var batchMode = gotListOfFiles;
 if (batchMode) {
   console.log("Using batch processing mode, processing all given files in-place.");
+  var dirsPending = 0;
+  remover.on('dirs', function(dir) {
+    dirsPending++;
+    fs.readdir(dir, function(err, files) {
+      dirsPending--;
+      if (err) {
+        console.error("Error reading directory '", dir, "':", err);
+      } else if (files && files.length) {
+        files.forEach(function(file) {
+          // Second condition here is to catch directories. Not strictly speaking fully correct,
+          // but easier than stat'ing and checking.
+          if (file.lastIndexOf('.js') == file.length - 3 || file.indexOf('.') == -1) {
+            var fullPath = path.join(dir, file);
+            remover.remove(fullPath, fullPath, args.l, batchMode, true);
+          }
+        });
+      }
+    });
+  });
+  remover.on('finished', function(totalFileCount) {
+    if (!dirsPending) {
+      console.log("Finished, processed " + totalFileCount + " successfully.");
+      process.exit(0);
+    }
+  });
 }
+
 for (var i = 0; i < files.length; i++) {
-  removeLogs(files[i][0], files[i][1], args.l, batchMode);
+  remover.remove(files[i][0], files[i][1], args.l, batchMode);
 }
 
 
