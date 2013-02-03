@@ -24,7 +24,7 @@ var path = require('path');
 var remover = new LogRemover();
 
 
-var myArgs = optimist.usage("Remove console logs from a JS file.\nUsage: $0")
+var myArgs = optimist.usage("Remove console logs from a JS file.\nUsage: $0 [files]\nIf specified, [files] will override the --input and --output options.\n")
                      .alias('h', 'help')
                      .alias('l', 'logonly')
                      .alias('i', 'input')
@@ -32,9 +32,7 @@ var myArgs = optimist.usage("Remove console logs from a JS file.\nUsage: $0")
                      .alias('io', 'inout')
                      .default('o', 'stdout')
                      .default('i', 'stdin')
-                     .default('io', '')
                      .default('l', false)
-                     .default('h', false)
                      .describe('i', 'Read input from this file, "stdin" to read from standard in.')
                      .describe('o', 'Write output to this file, "stdout" to write to standard out.')
                      .describe('io', 'Read and write to this file. Overrides the --input and --output options.')
@@ -48,20 +46,19 @@ if (args.h) {
   process.exit(0);
 }
 
-if (args.io != '') {
-  args.o = args.io;
-  args.i = args.io;
-}
-
 var files;
 var gotListOfFiles = false;
-if (!args.io && args.i == 'stdin' && args.o == 'stdout' && args._ && args._.length) {
+if (args._ && args._.length) {
   gotListOfFiles = true;
   files = args._;
   files = files.map(function(x) {
     return [x, x];
   });
 } else {
+  if (args.io != '') {
+    args.o = args.io;
+    args.i = args.io;
+  }
   files = [[args.i, args.o]];
 }
 
