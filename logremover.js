@@ -83,13 +83,22 @@ function cleanArg(arg) {
   return cleanNodeWithPossibleKids(topNode);
 }
 
-function updateNode(node) {
-  var nodesToLeave = callSideEffectsButDoNothing(node['arguments'], function(n) {
-    return cleanArg(n.source());
-  });
+function updateNode(node, keepSideEffects) {
+  var nodesToLeave;
+  if (keepSideEffects) {
+    nodesToLeave = callSideEffectsButDoNothing(node['arguments'], function(n) {
+      return cleanArg(n.source(), keepSideEffects);
+    });
+  } else {
+    nodesToLeave = [];
+  }
 
   if (!nodesToLeave.length) {
-    node.update('0');
+    if (node.parent.type == "ExpressionStatement") {
+      node.parent.__shouldRemoveEntirely = true;
+    } else {
+      node.update('0');
+    }
   } else {
     node.update('(' + nodesToLeave.join(' && 0) || (') + ' && 0)');
   }
@@ -115,7 +124,7 @@ function LogRemover() {
 util.inherits(LogRemover, emitter);
 
 LogRemover.prototype.remove =
-function remLogs(inDesignator, outDesignator, logOnly, batchMode, nonExplicit) {
+function remLogs(inDesignator, outDesignator, logOnly, batchMode, nonExplicit, keepSideEffects) {
   var self = this;
   function onInputError(ex, manualError) {
     if (!manualError) {
@@ -161,11 +170,11 @@ function remLogs(inDesignator, outDesignator, logOnly, batchMode, nonExplicit) {
     }
   }
 
-  processStream(instream, inDesignator, outDesignator, logOnly, batchMode, self);
+  processStream(instream, inDesignator, outDesignator, logOnly, batchMode, keepSideEffects, self);
 };
 
 
-function processStream(instream, inDesignator, outDesignator, logOnly, batchMode, self) {
+function processStream(instream, inDesignator, outDesignator, logOnly, batchMode, keepSideEffects, self) {
   var isStdOut = outDesignator == 'stdout';
   instream.setEncoding('utf8');
 
@@ -179,7 +188,9 @@ function processStream(instream, inDesignator, outDesignator, logOnly, batchMode
     try {
       outputStr = falafel(scriptdata, function(node) {
         if (isConsoleLog(node, logOnly)) {
-          updateNode(node);
+          updateNode(node, keepSideEffects);
+        } else if (node.__shouldRemoveEntirely) {
+          node.update('');
         }
       });
     } catch (ex) {

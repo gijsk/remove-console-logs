@@ -30,13 +30,16 @@ var myArgs = yargs.usage("Remove console logs from a JS file.\nUsage: $0 [files]
                   .alias('i', 'input')
                   .alias('o', 'output')
                   .alias('io', 'inout')
+                  .alias('p', 'purgearguments')
                   .default('o', 'stdout')
                   .default('i', 'stdin')
                   .default('l', false)
+                  .default('p', false)
                   .describe('i', 'Read input from this file, pass "stdin" to read from standard input instead.')
                   .describe('o', 'Write output to this file, pass "stdout" to write to standard output instead.')
                   .describe('io', 'Read and write to this file. Overrides the --input and --output options.')
                   .describe('l', 'Limit to replacing the "log" method, otherwise all other console calls will be removed, too.')
+                  .describe('p', 'Remove all arguments, even if they have side effects.')
                   .describe('h', 'Print this help.');
 
 var args = myArgs.argv;
@@ -55,13 +58,14 @@ if (args._ && args._.length) {
     return [x, x];
   });
 } else {
-  if (args.io != '') {
-    args.o = args.io;
-    args.i = args.io;
+  if (args.inout) {
+    args.output = args.inout;
+    args.input = args.inout;
   }
-  files = [[args.i, args.o]];
+  files = [[args.input, args.output]];
 }
 
+var keepSideEffects = !args.purgearguments;
 
 var batchMode = gotListOfFiles;
 if (batchMode) {
@@ -79,7 +83,7 @@ if (batchMode) {
           // but easier than stat'ing and checking.
           if (file.lastIndexOf('.js') == file.length - 3 || file.indexOf('.') == -1) {
             var fullPath = path.join(dir, file);
-            remover.remove(fullPath, fullPath, args.l, batchMode, true);
+            remover.remove(fullPath, fullPath, args.l, batchMode, true, keepSideEffects);
           }
         });
       }
@@ -94,7 +98,7 @@ if (batchMode) {
 }
 
 for (var i = 0; i < files.length; i++) {
-  remover.remove(files[i][0], files[i][1], args.l, batchMode);
+  remover.remove(files[i][0], files[i][1], args.l, batchMode, false, keepSideEffects);
 }
 
 
