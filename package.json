@@ -1,22 +1,27 @@
 {
   "name": "remove-console-logs",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Remove console logs from JS files.",
   "keywords": [
     "javascript",
     "console"
   ],
-  "author": "Gijs Kruitbosch <gijskruitbosch@gmail.com> (http://www.gijsk.com)",
+  "author": "Gijs Kruitbosch <gijskruitbosch@gmail.com> (https://www.gijsk.com)",
   "bin": {
     "remove-console-logs": "./remove-console-logs"
   },
   "dependencies": {
-    "optimist": ">=0.3.4",
-    "falafel": ">=0.0.1"
+    "yargs": ">=6.6.0",
+    "falafel": ">=2.0.0"
   },
   "devDependencies": {},
   "optionalDependencies": {},
   "engines": {
     "node": "*"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gijsk/remove-console-logs.git"
+  },
+  "license": "GPL-3.0"
 }

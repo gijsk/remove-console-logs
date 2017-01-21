@@ -16,7 +16,7 @@
  *
  */
 
-var optimist = require('optimist');
+var yargs = require('yargs');
 var LogRemover = require('./logremover.js');
 var fs = require('fs');
 var path = require('path');
@@ -24,20 +24,20 @@ var path = require('path');
 var remover = new LogRemover();
 
 
-var myArgs = optimist.usage("Remove console logs from a JS file.\nUsage: $0 [files]\nIf specified, [files] will override the --input and --output options.\n")
-                     .alias('h', 'help')
-                     .alias('l', 'logonly')
-                     .alias('i', 'input')
-                     .alias('o', 'output')
-                     .alias('io', 'inout')
-                     .default('o', 'stdout')
-                     .default('i', 'stdin')
-                     .default('l', false)
-                     .describe('i', 'Read input from this file, "stdin" to read from standard in.')
-                     .describe('o', 'Write output to this file, "stdout" to write to standard out.')
-                     .describe('io', 'Read and write to this file. Overrides the --input and --output options.')
-                     .describe('l', 'Limit to replacing the "log" method, otherwise all other console calls will be removed, too.')
-                     .describe('h', 'Print this help.');
+var myArgs = yargs.usage("Remove console logs from a JS file.\nUsage: $0 [files]\n\nIf specified, [files] will override the --input and --output options.")
+                  .alias('h', 'help')
+                  .alias('l', 'logonly')
+                  .alias('i', 'input')
+                  .alias('o', 'output')
+                  .alias('io', 'inout')
+                  .default('o', 'stdout')
+                  .default('i', 'stdin')
+                  .default('l', false)
+                  .describe('i', 'Read input from this file, pass "stdin" to read from standard input instead.')
+                  .describe('o', 'Write output to this file, pass "stdout" to write to standard output instead.')
+                  .describe('io', 'Read and write to this file. Overrides the --input and --output options.')
+                  .describe('l', 'Limit to replacing the "log" method, otherwise all other console calls will be removed, too.')
+                  .describe('h', 'Print this help.');
 
 var args = myArgs.argv;
 
