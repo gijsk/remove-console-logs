@@ -21,6 +21,10 @@ console.log(i--);
 
 console.log("We're now at " + (n += 5) + "%!");
 
+console.log(a && a[1] && [1].foo());
+console.log(5 + a);
+console.log(5 + a || a());
+
 function withSideEffects() {
   return "(side effects)";
 }

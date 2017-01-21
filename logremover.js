@@ -60,20 +60,12 @@ function cleanArg(arg) {
   var someNode = null;
   var n = falafel(arg, function(node) {
     someNode = node;
-    node.__selfHasSideEffects = node.type == 'CallExpression' || node.type == 'UpdateExpression' ||
-                                node.type == 'AssignmentExpression';
-    node.__hasSideEffects = (node.__kidsWithSideEffects && node.__kidsWithSideEffects.length) ||
-                            node.__selfHasSideEffects;
-    if (node.parent) {
-      if (!node.parent.__kidsWithSideEffects) {
-        node.parent.__kidsWithSideEffects = [];
-        node.parent.__kidsWithoutSideEffects = [];
-      }
-      if (node.__hasSideEffects) {
-        node.parent.__kidsWithSideEffects.push(node);
-      } else {
-        node.parent.__kidsWithoutSideEffects.push(node);
-      }
+    if (!node.__hasSideEffects) {
+      node.__hasSideEffects = node.type == 'CallExpression' || node.type == 'UpdateExpression' ||
+                              node.type == 'AssignmentExpression';
+    }
+    if (node.parent && node.__hasSideEffects) {
+      node.parent.__hasSideEffects = true;
     }
   });
   var topNode = someNode;
@@ -82,15 +74,8 @@ function cleanArg(arg) {
   }
 
   function cleanNodeWithPossibleKids(n) {
-    if (n.__selfHasSideEffects) {
-      var source = n.source();
-      if (n.type == 'AssignmentExpression' || n.type == 'UpdateExpression') {
-        source = '(' + source + ')';
-      }
-      return [source];
-    }
-    if (n.__kidsWithSideEffects && n.__kidsWithSideEffects.length) {
-      return callSideEffectsButDoNothing(n.__kidsWithSideEffects, cleanNodeWithPossibleKids);
+    if (n.__hasSideEffects) {
+      return ['(' + n.source() + ')'];
     }
     // Otherwise, nothin':
     return [];
